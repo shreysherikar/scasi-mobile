@@ -1,0 +1,16 @@
+# Backend secrets & local files
+backend/.env
+backend/.venv/
+backend/__pycache__/
+backend/*.pyc
+backend/scasi.db
+
+# Flutter
+app/.dart_tool/
+app/build/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+
+# OS/editor
+.DS_Store
+*.swp
