@@ -1,4 +1,10 @@
 import os
+from dotenv import load_dotenv
+
+# Loads backend/.env into the process environment when running locally
+# (uvicorn, pytest, etc.). In production (Render), env vars are injected
+# directly by the platform, so this is a no-op if no .env file exists.
+load_dotenv()
 
 
 class Settings:
@@ -21,3 +27,12 @@ class Settings:
 
 
 settings = Settings()
+
+if not settings.SUPABASE_URL or not settings.SUPABASE_SERVICE_ROLE_KEY:
+    # Loud on purpose: a silently-empty Supabase config surfaces later as a
+    # confusing 401 on every request instead of a clear startup warning.
+    print(
+        "[config] WARNING: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not set. "
+        "Create backend/.env from backend/.env.example and fill in your "
+        "Supabase project's values, or every request will fail auth."
+    )

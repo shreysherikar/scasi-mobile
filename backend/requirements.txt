@@ -5,3 +5,4 @@ pyjwt[crypto]==2.9.0
 supabase==2.7.4
 pydantic==2.9.2
 python-multipart==0.0.9
+python-dotenv==1.0.1

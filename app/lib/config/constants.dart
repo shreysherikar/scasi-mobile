@@ -11,7 +11,7 @@ const List<String> kGmailScopes = [
 /// protects the data, not secrecy of these values.
 /// From: Supabase dashboard -> Project Settings -> API.
 const String kSupabaseUrl = 'https://rrbsqxuwlchlvccwhwmz.supabase.co';
-const String kSupabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyYnNxeHV3bGNobHZjY3dod216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMDM0NDQsImV4cCI6MjEwMzU3OTQ0NH0.YgytKD3vR8EldEaHeTs2ekr8LEA2qUcGrt83ZshNTdc';
+const String kSupabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyYnNxeHV3bGNobHZjY3dod216Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4ODAwMzQ0NCwiZXhwIjoyMTAzNTc5NDQ0fQ.v8xgWzYkzC4UeMu3DwYKXbz30EJPD3StK6I7kE11rRk';
 
 /// A Google Cloud OAuth client ID of type "Web application" (not the
 /// Android/iOS client). Required as GoogleSignIn's serverClientId so the ID
