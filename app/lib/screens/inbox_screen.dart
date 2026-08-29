@@ -3,9 +3,7 @@ import '../models/email.dart';
 import '../services/gmail_service.dart';
 import '../services/classify_rules.dart';
 import '../services/email_actions_service.dart';
-import '../services/groq_service.dart';
 import 'email_detail_screen.dart';
-import 'settings_screen.dart';
 import 'login_screen.dart';
 
 class InboxScreen extends StatefulWidget {
@@ -61,25 +59,10 @@ class _InboxScreenState extends State<InboxScreen> {
         _brief = brief;
         _triaging = false;
       });
-    } on NoApiKeyException {
-      setState(() => _triaging = false);
-      _promptForKey();
     } catch (e) {
       setState(() => _triaging = false);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Triage failed: $e')));
     }
-  }
-
-  void _promptForKey() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Add a Groq API key in Settings to use AI features.'),
-        action: SnackBarAction(
-          label: 'Settings',
-          onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
-        ),
-      ),
-    );
   }
 
   void _goToLogin() {

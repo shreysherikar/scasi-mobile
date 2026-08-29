@@ -19,7 +19,7 @@ def _sse(event: str, data: dict) -> str:
 @router.post("/stream")
 def chat_stream(body: ChatRequest, user=Depends(get_current_user)):
     def event_source():
-        session_id = ensure_session(body.sessionId, user["email"], body.message)
+        session_id = ensure_session(body.sessionId, user["id"], body.message)
 
         try:
             # Step 1 — intent routing (visible in the UI as a status line).
@@ -50,7 +50,7 @@ def chat_stream(body: ChatRequest, user=Depends(get_current_user)):
 
 @router.get("/sessions")
 def sessions(user=Depends(get_current_user)):
-    return {"sessions": list_sessions(user["email"])}
+    return {"sessions": list_sessions(user["id"])}
 
 
 @router.get("/history/{session_id}")

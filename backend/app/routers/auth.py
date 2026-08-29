@@ -1,23 +1,14 @@
-from fastapi import APIRouter
-from ..schemas import GoogleAuthRequest
-from ..auth import verify_google_id_token, issue_backend_token
+from fastapi import APIRouter, Depends
+
+from ..auth import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/google")
-def google_auth(body: GoogleAuthRequest):
-    """Exchange a Google ID token (from the Flutter app's native Google Sign-In)
-    for a Scasi backend session token. Stateless verification — no server-side
-    OAuth code exchange needed since we only need identity, not a Gmail token
-    (the app talks to Gmail directly with its own access token)."""
-    payload = verify_google_id_token(body.idToken)
-    token = issue_backend_token(
-        email=payload["email"],
-        name=payload.get("name"),
-        picture=payload.get("picture"),
-    )
-    return {
-        "token": token,
-        "user": {"email": payload["email"], "name": payload.get("name"), "picture": payload.get("picture")},
-    }
+@router.get("/me")
+def me(user=Depends(get_current_user)):
+    """The app calls this once right after Supabase sign-in to confirm the
+    backend accepted the session and to warm the `users` row. There's no
+    more POST /auth/google — Supabase itself verifies Google and issues the
+    session token now; this backend only verifies Supabase's signature."""
+    return {"user": user}

@@ -1,55 +1,52 @@
-import time
-from fastapi import Header, HTTPException
-from google.oauth2 import id_token as google_id_token
-from google.auth.transport import requests as google_requests
 import jwt
+from jwt import PyJWKClient
+from fastapi import Header, HTTPException
 
 from .config import settings
 from .db import upsert_user
 
-_google_request = google_requests.Request()
+_jwk_client: PyJWKClient | None = None
 
 
-def verify_google_id_token(token: str) -> dict:
-    """Verifies a Google ID token and returns its payload (email, name, picture).
-
-    Audience must match GOOGLE_CLIENT_ID — the Flutter app's GoogleSignIn must be
-    configured with `serverClientId: <this same client id>` so tokens issued on
-    Android/iOS carry the right audience.
-    """
-    try:
-        payload = google_id_token.verify_oauth2_token(
-            token, _google_request, audience=settings.GOOGLE_CLIENT_ID
-        )
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Invalid Google ID token: {e}")
-
-    email = payload.get("email")
-    if not email:
-        raise HTTPException(status_code=400, detail="Google account has no email")
-    return payload
-
-
-def issue_backend_token(email: str, name: str | None, picture: str | None) -> str:
-    upsert_user(email, name, picture)
-    payload = {
-        "sub": email,
-        "name": name,
-        "picture": picture,
-        "iat": int(time.time()),
-        "exp": int(time.time()) + settings.JWT_EXPIRE_DAYS * 86400,
-    }
-    return jwt.encode(payload, settings.JWT_SECRET, algorithm="HS256")
+def _get_jwk_client() -> PyJWKClient:
+    global _jwk_client
+    if _jwk_client is None:
+        if not settings.SUPABASE_URL:
+            raise HTTPException(status_code=500, detail="Supabase is not configured on this backend")
+        _jwk_client = PyJWKClient(settings.SUPABASE_JWKS_URL)
+    return _jwk_client
 
 
 def get_current_user(authorization: str = Header(None)) -> dict:
+    """Verifies the Supabase session token the Flutter app sends after
+    Supabase Auth's signInWithIdToken(Google) exchange.
+
+    Supabase is now the identity provider — not this backend — so we only
+    verify the token's signature/audience/expiry against Supabase's public
+    keys. We no longer issue our own JWTs or verify Google ID tokens here.
+    """
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing bearer token")
     token = authorization.removeprefix("Bearer ").strip()
+
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Session expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid session token")
-    return {"email": payload["sub"], "name": payload.get("name"), "picture": payload.get("picture")}
+        signing_key = _get_jwk_client().get_signing_key_from_jwt(token)
+        payload = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["ES256", "RS256"],
+            audience="authenticated",
+        )
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Invalid Supabase session: {e}")
+
+    user_id = payload["sub"]
+    email = payload.get("email")
+    metadata = payload.get("user_metadata") or {}
+    name = metadata.get("full_name") or metadata.get("name")
+    picture = metadata.get("avatar_url") or metadata.get("picture")
+
+    # Keep our own users table (used for FK joins on chat_sessions) in sync.
+    upsert_user(user_id, email, name, picture)
+
+    return {"id": user_id, "email": email, "name": name, "picture": picture}

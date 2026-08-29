@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/email.dart';
 import '../services/email_actions_service.dart';
-import '../services/groq_service.dart';
-import 'settings_screen.dart';
 
 class EmailDetailScreen extends StatefulWidget {
   final ScasiEmail email;
@@ -27,9 +25,6 @@ class _EmailDetailScreenState extends State<EmailDetailScreen> {
         _summary = result;
         _summarizing = false;
       });
-    } on NoApiKeyException {
-      setState(() => _summarizing = false);
-      _promptForKey();
     } catch (e) {
       setState(() => _summarizing = false);
       _showError(e);
@@ -44,26 +39,12 @@ class _EmailDetailScreenState extends State<EmailDetailScreen> {
         _draftReply = result;
         _drafting = false;
       });
-    } on NoApiKeyException {
-      setState(() => _drafting = false);
-      _promptForKey();
     } catch (e) {
       setState(() => _drafting = false);
       _showError(e);
     }
   }
 
-  void _promptForKey() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Add a Groq API key in Settings to use AI features.'),
-        action: SnackBarAction(
-          label: 'Settings',
-          onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
-        ),
-      ),
-    );
-  }
 
   void _showError(Object e) {
     if (!mounted) return;

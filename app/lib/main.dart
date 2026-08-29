@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'services/auth_service.dart';
+import 'services/supabase_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SupabaseService.init();
   runApp(const ScasiApp());
 }
 

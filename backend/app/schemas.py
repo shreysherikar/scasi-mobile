@@ -2,10 +2,6 @@ from pydantic import BaseModel
 from typing import Optional, List
 
 
-class GoogleAuthRequest(BaseModel):
-    idToken: str
-
-
 class ClassifyRequest(BaseModel):
     subject: str = ""
     snippet: str = ""

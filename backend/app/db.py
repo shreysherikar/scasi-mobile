@@ -1,104 +1,76 @@
-import sqlite3
-import threading
 import time
 import uuid
-from contextlib import contextmanager
+from typing import Optional
+
+from supabase import create_client, Client
 
 from .config import settings
 
-_lock = threading.Lock()
+_client: Optional[Client] = None
 
 
-def init_db():
-    with _connect() as conn:
-        conn.executescript(
-            """
-            CREATE TABLE IF NOT EXISTS users (
-                email TEXT PRIMARY KEY,
-                name TEXT,
-                picture TEXT,
-                created_at REAL
-            );
-
-            CREATE TABLE IF NOT EXISTS chat_sessions (
-                id TEXT PRIMARY KEY,
-                user_email TEXT,
-                title TEXT,
-                created_at REAL,
-                updated_at REAL
-            );
-
-            CREATE TABLE IF NOT EXISTS chat_messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                session_id TEXT,
-                role TEXT,
-                content TEXT,
-                created_at REAL
-            );
-            """
-        )
+def get_client() -> Client:
+    """Server-side Supabase client using the service-role key — bypasses RLS,
+    which is fine because every caller into this module has already been
+    authenticated by get_current_user() in auth.py."""
+    global _client
+    if _client is None:
+        if not settings.SUPABASE_URL or not settings.SUPABASE_SERVICE_ROLE_KEY:
+            raise RuntimeError("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not set")
+        _client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
+    return _client
 
 
-@contextmanager
-def _connect():
-    conn = sqlite3.connect(settings.DB_PATH)
-    conn.row_factory = sqlite3.Row
-    try:
-        yield conn
-        conn.commit()
-    finally:
-        conn.close()
+def upsert_user(user_id: str, email: str | None, name: str | None, picture: str | None):
+    get_client().table("users").upsert(
+        {"id": user_id, "email": email, "name": name, "picture": picture}
+    ).execute()
 
 
-def upsert_user(email: str, name: str | None, picture: str | None):
-    with _lock, _connect() as conn:
-        conn.execute(
-            """
-            INSERT INTO users (email, name, picture, created_at)
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(email) DO UPDATE SET name=excluded.name, picture=excluded.picture
-            """,
-            (email, name, picture, time.time()),
-        )
-
-
-def ensure_session(session_id: str | None, user_email: str, first_message: str) -> str:
+def ensure_session(session_id: str | None, user_id: str, first_message: str) -> str:
+    client = get_client()
     sid = session_id or str(uuid.uuid4())
-    with _lock, _connect() as conn:
-        existing = conn.execute("SELECT id FROM chat_sessions WHERE id = ?", (sid,)).fetchone()
-        now = time.time()
-        if existing is None:
-            title = (first_message[:60] + "…") if len(first_message) > 60 else first_message
-            conn.execute(
-                "INSERT INTO chat_sessions (id, user_email, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-                (sid, user_email, title, now, now),
-            )
-        else:
-            conn.execute("UPDATE chat_sessions SET updated_at = ? WHERE id = ?", (now, sid))
+
+    existing = client.table("chat_sessions").select("id").eq("id", sid).execute()
+    if not existing.data:
+        title = (first_message[:60] + "…") if len(first_message) > 60 else first_message
+        client.table("chat_sessions").insert(
+            {"id": sid, "user_id": user_id, "title": title}
+        ).execute()
+    else:
+        client.table("chat_sessions").update(
+            {"updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+        ).eq("id", sid).execute()
+
     return sid
 
 
 def save_message(session_id: str, role: str, content: str):
-    with _lock, _connect() as conn:
-        conn.execute(
-            "INSERT INTO chat_messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)",
-            (session_id, role, content, time.time()),
-        )
+    get_client().table("chat_messages").insert(
+        {"session_id": session_id, "role": role, "content": content}
+    ).execute()
 
 
 def get_history(session_id: str, limit: int = 20) -> list[dict]:
-    with _lock, _connect() as conn:
-        rows = conn.execute(
-            "SELECT role, content FROM chat_messages WHERE session_id = ? ORDER BY id ASC LIMIT ?",
-            (session_id, limit),
-        ).fetchall()
-    return [{"role": r["role"], "content": r["content"]} for r in rows]
+    res = (
+        get_client()
+        .table("chat_messages")
+        .select("role, content")
+        .eq("session_id", session_id)
+        .order("id")
+        .limit(limit)
+        .execute()
+    )
+    return [{"role": r["role"], "content": r["content"]} for r in (res.data or [])]
 
 
-def list_sessions(user_email: str) -> list[dict]:
-    with _lock, _connect() as conn:
-        rows = conn.execute(
-            "SELECT id, title, updated_at FROM chat_sessions WHERE user_email = ? ORDER BY updated_at DESC",
-            (user_email,),
-        ).fetchall()
-    return [{"id": r["id"], "title": r["title"], "updatedAt": r["updated_at"]} for r in rows]
+def list_sessions(user_id: str) -> list[dict]:
+    res = (
+        get_client()
+        .table("chat_sessions")
+        .select("id, title, updated_at")
+        .eq("user_id", user_id)
+        .order("updated_at", desc=True)
+        .execute()
+    )
+    return [{"id": r["id"], "title": r["title"], "updatedAt": r["updated_at"]} for r in (res.data or [])]

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/groq_service.dart';
-import '../services/prompts.dart';
-import 'settings_screen.dart';
+import '../services/backend_api_service.dart';
 
 enum _Role { user, assistant }
 
@@ -21,11 +19,12 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final _groq = GroqService();
+  final _backend = BackendApiService();
   final _controller = TextEditingController();
   final _scroll = ScrollController();
   final List<_Turn> _turns = [];
   bool _sending = false;
+  String? _sessionId;
 
   Future<void> _send() async {
     final text = _controller.text.trim();
@@ -40,24 +39,23 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollToBottom();
     final assistantTurn = _turns.last;
 
-    final messages = <Map<String, String>>[
-      {'role': 'system', 'content': kChatSystemPrompt},
-      for (final t in _turns.where((t) => t != assistantTurn))
-        {'role': t.role == _Role.user ? 'user' : 'assistant', 'content': t.text},
-    ];
-
     try {
-      await for (final delta in _groq.streamChat(messages)) {
+      // The backend keeps conversation history itself (Supabase-backed,
+      // keyed by sessionId) so we only need to send the latest message.
+      await for (final delta in _backend.streamChat(
+        text,
+        sessionId: _sessionId,
+        onSessionId: (sid) => _sessionId = sid,
+      )) {
         setState(() => assistantTurn.text += delta);
         _scrollToBottom();
       }
       setState(() => assistantTurn.streaming = false);
-    } on NoApiKeyException {
+    } on BackendApiException catch (e) {
       setState(() {
         assistantTurn.streaming = false;
-        assistantTurn.error = 'No Groq API key set.';
+        assistantTurn.error = e.message;
       });
-      _promptForKey();
     } catch (e) {
       setState(() {
         assistantTurn.streaming = false;
@@ -66,18 +64,6 @@ class _ChatScreenState extends State<ChatScreen> {
     } finally {
       if (mounted) setState(() => _sending = false);
     }
-  }
-
-  void _promptForKey() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Add a Groq API key in Settings to chat.'),
-        action: SnackBarAction(
-          label: 'Settings',
-          onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
-        ),
-      ),
-    );
   }
 
   void _scrollToBottom() {

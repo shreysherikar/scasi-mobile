@@ -6,8 +6,22 @@ const List<String> kGmailScopes = [
   'https://www.googleapis.com/auth/gmail.readonly',
 ];
 
-/// Groq's OpenAI-compatible endpoint — the same one Scasi-AI's backend uses.
-const String kGroqEndpoint = 'https://api.groq.com/openai/v1/chat/completions';
+/// Supabase project URL + anon key — safe to ship in the app. Row Level
+/// Security in Postgres (see backend/supabase/migrations) is what actually
+/// protects the data, not secrecy of these values.
+/// From: Supabase dashboard -> Project Settings -> API.
+const String kSupabaseUrl = 'https://rrbsqxuwlchlvccwhwmz.supabase.co';
+const String kSupabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyYnNxeHV3bGNobHZjY3dod216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMDM0NDQsImV4cCI6MjEwMzU3OTQ0NH0.YgytKD3vR8EldEaHeTs2ekr8LEA2qUcGrt83ZshNTdc';
 
-/// Same model Scasi's backend uses for reply/chat tasks.
-const String kGroqModel = 'llama-3.3-70b-versatile';
+/// A Google Cloud OAuth client ID of type "Web application" (not the
+/// Android/iOS client). Required as GoogleSignIn's serverClientId so the ID
+/// token's audience matches what Supabase's Google provider expects.
+/// From: Google Cloud Console -> APIs & Services -> Credentials.
+const String kGoogleServerClientId = '211736943252-obd33i3cfrprqguq5lc6osvkdpu6apb9.apps.googleusercontent.com';
+
+/// Base URL of the FastAPI backend in /backend. Override at build/run time
+/// with --dart-define=API_BASE_URL=https://your-backend.example.com
+const String kBackendBaseUrl = String.fromEnvironment(
+  'API_BASE_URL',
+  defaultValue: 'http://10.0.2.2:8000', // Android emulator -> host machine
+);
