@@ -12,7 +12,10 @@ class SupabaseService {
 
   static Future<void> init() => Supabase.initialize(
         url: kSupabaseUrl,
-        anonKey: kSupabaseAnonKey,
+        // Supabase renamed "anon key" -> "publishable key" across their
+        // platform; it's the same value from Project Settings -> API, just
+        // a new name. `anonKey` still works but is deprecated.
+        publishableKey: kSupabaseAnonKey,
       );
 
   SupabaseClient get client => Supabase.instance.client;

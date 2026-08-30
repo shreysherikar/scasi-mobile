@@ -3,6 +3,7 @@ import '../models/email.dart';
 import '../services/gmail_service.dart';
 import '../services/classify_rules.dart';
 import '../services/email_actions_service.dart';
+import '../services/backend_api_service.dart';
 import 'email_detail_screen.dart';
 import 'login_screen.dart';
 
@@ -59,6 +60,9 @@ class _InboxScreenState extends State<InboxScreen> {
         _brief = brief;
         _triaging = false;
       });
+    } on BackendApiException catch (e) {
+      setState(() => _triaging = false);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Triage failed: ${e.message}')));
     } catch (e) {
       setState(() => _triaging = false);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Triage failed: $e')));
@@ -165,7 +169,7 @@ class _CategoryChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: _color().withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(color: _color().withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12)),
       child: Text(category, style: TextStyle(color: _color(), fontSize: 10, fontWeight: FontWeight.w600)),
     );
   }

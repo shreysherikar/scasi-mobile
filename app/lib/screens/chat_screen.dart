@@ -8,7 +8,7 @@ class _Turn {
   String text;
   bool streaming;
   String? error;
-  _Turn({required this.role, this.text = '', this.streaming = false, this.error});
+  _Turn({required this.role, this.text = '', this.streaming = false});
 }
 
 class ChatScreen extends StatefulWidget {

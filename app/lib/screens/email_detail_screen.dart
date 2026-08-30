@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/email.dart';
 import '../services/email_actions_service.dart';
+import '../services/backend_api_service.dart';
 
 class EmailDetailScreen extends StatefulWidget {
   final ScasiEmail email;
@@ -25,6 +26,9 @@ class _EmailDetailScreenState extends State<EmailDetailScreen> {
         _summary = result;
         _summarizing = false;
       });
+    } on BackendApiException catch (e) {
+      setState(() => _summarizing = false);
+      _showError(e.message);
     } catch (e) {
       setState(() => _summarizing = false);
       _showError(e);
@@ -39,12 +43,14 @@ class _EmailDetailScreenState extends State<EmailDetailScreen> {
         _draftReply = result;
         _drafting = false;
       });
+    } on BackendApiException catch (e) {
+      setState(() => _drafting = false);
+      _showError(e.message);
     } catch (e) {
       setState(() => _drafting = false);
       _showError(e);
     }
   }
-
 
   void _showError(Object e) {
     if (!mounted) return;

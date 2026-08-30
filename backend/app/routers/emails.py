@@ -51,6 +51,12 @@ def reply(body: ReplyRequest, user=Depends(get_current_user)):
 
 @router.post("/triage")
 def triage(body: TriageRequest, user=Depends(get_current_user)):
+    if not body.emails:
+        # An empty blob sent to the model is what triggers Groq's
+        # json_validate_failed error in the first place — short-circuit
+        # instead of spending a call on nothing to summarize.
+        return {"stats": {"total": 0, "urgent": 0, "needsReply": 0, "fyi": 0}, "items": []}
+
     time_str = datetime.now().strftime("%A, %B %d, %Y at %I:%M %p")
     blob = "\n---\n".join(
         f"From: {e.sender or 'Unknown'}\nSubject: {e.subject or ''}\nSnippet: {e.snippet or ''}"
