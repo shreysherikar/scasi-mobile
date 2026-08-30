@@ -1,5 +1,8 @@
 # Scasi Mobile
 
+![CI](https://github.com/shreysherikar/scasi-mobile/actions/workflows/ci.yml/badge.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+
 A Flutter client for [Scasi AI](https://github.com/shreysherikar/Scasi-AI), backed by a
 custom FastAPI backend — Supabase-authenticated Google Sign-In, a real Gmail inbox, and
 AI-powered email classification, summarization, reply drafting, and inbox triage, plus a
@@ -57,7 +60,18 @@ Short version:
    `app/lib/config/constants.dart`, then run the Flutter app pointed at the backend
    via `--dart-define=API_BASE_URL=...`.
 
+## Testing
+
+- Backend: `cd backend && pip install -r requirements.txt -r requirements-dev.txt && pytest`
+- App: `cd app && flutter analyze && flutter test`
+
+Both run automatically on every push via GitHub Actions (see the badge above).
+
 ## Status
 
 Supabase-backed authentication and persistence are implemented — the app and backend
 are fully paired, matching the original Scasi-AI web backend's architecture.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
