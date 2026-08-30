@@ -23,5 +23,5 @@ const String kGoogleServerClientId = '211736943252-obd33i3cfrprqguq5lc6osvkdpu6a
 /// with --dart-define=API_BASE_URL=https://your-backend.example.com
 const String kBackendBaseUrl = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'http://10.0.2.2:8000', // Android emulator -> host machine
+  defaultValue: 'https://scasi-api.onrender.com/', // Android emulator -> host machine
 );

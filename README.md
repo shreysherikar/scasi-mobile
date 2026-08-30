@@ -8,6 +8,8 @@ custom FastAPI backend — Supabase-authenticated Google Sign-In, a real Gmail i
 AI-powered email classification, summarization, reply drafting, and inbox triage, plus a
 streaming conversational assistant with persisted chat history.
 
+**Live backend:** https://scasi-api.onrender.com ([API docs](https://scasi-api.onrender.com/docs))
+
 ## Structure
 
 ```
@@ -21,6 +23,7 @@ scasi-mobile/
 **App:** Flutter, Dart, Google Sign-In, Supabase (auth session), Gmail REST API
 **Backend:** Python, FastAPI, Groq (Llama/GPT-OSS via Groq's LPU inference), Supabase
 (Postgres + JWT-based auth verification via JWKS)
+**Infra:** Render (backend hosting), GitHub Actions (CI)
 
 ## Features
 
@@ -49,16 +52,30 @@ scasi-mobile/
 
 ## Running it
 
-See `backend/README.md` and `app/README.md` for setup instructions for each half.
-Short version:
+The app points at the live backend above by default — clone, configure the app-side
+values below, and run.
+
 1. Create a Supabase project, run `backend/supabase/migrations/0001_init.sql`, and
-   enable Google as an auth provider.
-2. Set `GROQ_API_KEY`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` in
-   `backend/.env` (see `backend/.env.example`), then start the backend:
-   `uvicorn app.main:app --reload`.
-3. Set `kSupabaseUrl`, `kSupabaseAnonKey`, and `kGoogleServerClientId` in
-   `app/lib/config/constants.dart`, then run the Flutter app pointed at the backend
-   via `--dart-define=API_BASE_URL=...`.
+   enable Google as an auth provider — only needed if you're running your **own**
+   backend instance instead of the hosted one above.
+2. Set `kSupabaseUrl`, `kSupabaseAnonKey`, and `kGoogleServerClientId` in
+   `app/lib/config/constants.dart`, then:
+   ```
+   cd app
+   flutter pub get
+   flutter run
+   ```
+   To point at a different backend (e.g. one you're running locally), pass
+   `--dart-define=API_BASE_URL=http://10.0.2.2:8000` (Android emulator) or your own URL.
+
+### Running the backend yourself (optional)
+
+```
+cd backend
+cp .env.example .env   # fill in GROQ_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
 
 ## Testing
 
@@ -67,10 +84,17 @@ Short version:
 
 Both run automatically on every push via GitHub Actions (see the badge above).
 
+## Deployment notes
+
+The backend is hosted on Render's free tier, which sleeps after ~15 minutes of
+inactivity — the first request after a period of idle time can take 30–60 seconds
+to wake it back up. This is expected behavior, not a bug.
+
 ## Status
 
 Supabase-backed authentication and persistence are implemented — the app and backend
-are fully paired, matching the original Scasi-AI web backend's architecture.
+are fully paired, matching the original Scasi-AI web backend's architecture, and the
+backend is deployed and publicly reachable.
 
 ## License
 
