@@ -1,4 +1,4 @@
-# Backend secrets & local files
+﻿# Backend secrets & local files
 backend/.env
 backend/.venv/
 backend/__pycache__/
@@ -13,4 +13,8 @@ app/.flutter-plugins-dependencies
 
 # OS/editor
 .DS_Store
-*.swpapp/android/.kotlin/
+*.swp
+.vscode/
+app/android/.kotlin/
+.vscode/
+
